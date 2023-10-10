@@ -12,8 +12,6 @@ import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSeriali
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
-import java.time.Duration;
-
 @Configuration
 @EnableCaching
 public class CacheConfig extends CachingConfigurerSupport {
@@ -22,11 +20,13 @@ public class CacheConfig extends CachingConfigurerSupport {
     public CacheManager hbcCacheManager(RedisConnectionFactory cf) {
         RedisCacheConfiguration redisCacheConfiguration = RedisCacheConfiguration.defaultCacheConfig()
             // key -> String 직렬화.
-            .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
+            .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(
+                new StringRedisSerializer()))
             // value -> JSON 직렬화.
-            .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(new GenericJackson2JsonRedisSerializer()))
-            // TTL(Time To Live) : 30분 설정.
-            .entryTtl(Duration.ofMinutes(30L));
+            .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(
+                new GenericJackson2JsonRedisSerializer()))
+            // null value 캐싱 X.
+            .disableCachingNullValues();
 
         return RedisCacheManager
             .RedisCacheManagerBuilder
@@ -35,5 +35,3 @@ public class CacheConfig extends CachingConfigurerSupport {
             .build();
     }
 }
-
-
