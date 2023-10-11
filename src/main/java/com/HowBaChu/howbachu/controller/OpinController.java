@@ -4,6 +4,7 @@ import com.HowBaChu.howbachu.domain.constants.ResponseCode;
 import com.HowBaChu.howbachu.domain.dto.opin.OpinRequestDto;
 import com.HowBaChu.howbachu.domain.dto.response.ResResult;
 import com.HowBaChu.howbachu.service.OpinService;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -26,12 +27,12 @@ public class OpinController {
             .responseCode(responseCode)
             .code(responseCode.getCode())
             .message(responseCode.getMessage())
-            .data(opinService.createOpin(requestDto, authentication.getName(), requestDto.getParentId()))
+            .data(opinService.createOpin(requestDto, authentication.getName(), requestDto.getParentId()).getId())
             .build(), responseCode.getHttpStatus());
     }
 
     @GetMapping
-    public ResponseEntity<?> listOpin() {
+    public ResponseEntity<?> listOpin() throws JsonProcessingException {
         ResponseCode responseCode = ResponseCode.OPIN_LIST;
         return new ResponseEntity<>(ResResult.builder()
             .responseCode(responseCode)
@@ -62,7 +63,7 @@ public class OpinController {
             .responseCode(responseCode)
             .code(responseCode.getCode())
             .message(responseCode.getMessage())
-            .data(opinService.updateOpin(requestDto, Long.parseLong(id), authentication.getName()))
+            .data(opinService.updateOpin(requestDto, Long.parseLong(id), authentication.getName()).getId())
             .build(), responseCode.getHttpStatus());
     }
 

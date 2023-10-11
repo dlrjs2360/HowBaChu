@@ -10,23 +10,33 @@ import com.HowBaChu.howbachu.exception.constants.ErrorCode;
 import com.HowBaChu.howbachu.repository.OpinRepository;
 import com.HowBaChu.howbachu.repository.VoteRepository;
 import com.HowBaChu.howbachu.service.OpinService;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
+@Slf4j
 public class OpinServiceImpl implements OpinService {
+
 
     private final VoteRepository voteRepository;
     private final OpinRepository opinRepository;
+    private final ApplicationContext context;
+    private final List<Long> opinIdList = new ArrayList<>();
 
     @Override
     @Transactional
-    public Long createOpin(OpinRequestDto requestDto, String email, Long parentId) {
+    @CachePut(value = "opin", key = "#result.id")
+    public OpinResponseDto createOpin(OpinRequestDto requestDto, String email, Long parentId) {
 
         Vote vote = voteRepository.findVoteByEmail(email).orElseThrow(
             () -> new CustomException(ErrorCode.VOTE_NOT_FOUND)
@@ -43,12 +53,17 @@ public class OpinServiceImpl implements OpinService {
             opin = Opin.of(requestDto.getContent(), vote, parentOpin);
         }
 
-        return opinRepository.save(opin).getId();
+        Opin opinSaved = opinRepository.save(opin);
+
+        opinIdList.add(opinSaved.getId());
+
+        return OpinResponseDto.of(opinSaved);
     }
 
     @Override
     public List<OpinResponseDto> getOpinList() {
-        return opinRepository.fetchOpinList();
+        OpinServiceImpl self = context.getBean(OpinServiceImpl.class);
+        return opinIdList.stream().map(self::getOpin).collect(Collectors.toList());
     }
 
     @Override
@@ -67,10 +82,11 @@ public class OpinServiceImpl implements OpinService {
 
     @Override
     @Transactional
-    public Long updateOpin(OpinRequestDto requestDto, Long opinId, String email) {
+    @CachePut(value = "opin", key = "#result.id")
+    public Opin updateOpin(OpinRequestDto requestDto, Long opinId, String email) {
         Opin opin = getOpin(opinId, email);
         opin.updateContent(requestDto.getContent());
-        return opinId;
+        return opin;
     }
 
     @Override
@@ -79,5 +95,11 @@ public class OpinServiceImpl implements OpinService {
             () -> new CustomException(ErrorCode.OPIN_MISS_MATCH)
         );
     }
-
+    @Override
+    @Cacheable(value = "opin", key = "#opinId")
+    public OpinResponseDto getOpin(Long opinId) {
+        return OpinResponseDto.of(opinRepository.findById(opinId).orElseThrow(
+            () -> new CustomException(ErrorCode.OPIN_NOT_FOUND)
+        ));
+    }
 }

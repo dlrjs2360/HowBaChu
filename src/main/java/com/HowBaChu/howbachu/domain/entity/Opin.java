@@ -13,7 +13,7 @@ import java.util.List;
 @Builder
 @Getter
 @AllArgsConstructor
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@NoArgsConstructor
 @SQLDelete(sql = "UPDATE opin SET isDeleted = true WHERE opin_id = ?")
 @Where(clause = "is_deleted != true")
 public class Opin extends BaseEntity {
@@ -52,6 +52,7 @@ public class Opin extends BaseEntity {
         return Opin.builder()
             .content(content)
             .vote(vote)
+            .isDeleted(false)
             .build();
     }
 
@@ -66,6 +67,7 @@ public class Opin extends BaseEntity {
             .content(content)
             .vote(vote)
             .parent(parentOpin)
+            .isDeleted(false)
             .build();
         parentOpin.addChildOpin(childOpin);
         return childOpin;
